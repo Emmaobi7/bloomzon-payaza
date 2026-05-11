@@ -170,7 +170,8 @@ export const checkoutPage = (req: Request, res: Response) => {
 
     function onCallback(response) {
       console.log('Payaza callback:', JSON.stringify(response));
-      var status = (response && response.status) ? response.status : 'unknown';
+      var status = (response && response.status) ? String(response.status).toLowerCase() : 'unknown';
+      if (status === '201' || status === 'success') { status = 'successful'; }
       var ref = (response && (response.reference || response.merchant_reference)) ? (response.reference || response.merchant_reference) : ${JSON.stringify(tx_ref)};
       statusEl.textContent = 'Payment ' + status + '. Redirecting…';
       var redirectUrl = ${JSON.stringify(safeRedirectUrl)};
@@ -192,19 +193,27 @@ export const checkoutPage = (req: Request, res: Response) => {
       }
       try {
         var isTest = (${JSON.stringify(merchant_key)} || '').includes('TEST');
-        return PayazaCheckout.setup({
+        var rawName = (${JSON.stringify(name || '')}).trim() || 'Customer';
+        var nameParts = rawName.split(' ');
+        var firstName = nameParts[0] || 'Customer';
+        var lastName = nameParts.slice(1).join(' ') || 'User'; // SDK requires non-blank last_name
+
+        var config = {
           merchant_key: ${JSON.stringify(merchant_key)},
           connection_mode: isTest ? PayazaCheckout.TEST_CONNECTION_MODE : PayazaCheckout.LIVE_CONNECTION_MODE,
           checkout_amount: Number(${JSON.stringify(amount)}),
           currency_code: ${JSON.stringify(currency || 'NGN')},
           email_address: ${JSON.stringify(email || '')},
-          first_name: ${JSON.stringify((name || '').split(' ')[0] || '')},
-          last_name: ${JSON.stringify((name || '').split(' ').slice(1).join(' ') || '')},
+          first_name: firstName,
+          last_name: lastName,
           phone_number: ${JSON.stringify(phone || '')},
           transaction_reference: ${JSON.stringify(tx_ref)},
           onClose: onClose,
           callback: onCallback,
-        });
+        };
+
+        console.log('[Payaza] Initializing with config:', config);
+        return PayazaCheckout.setup(config);
       } catch(e) {
         console.error('PayazaCheckout.setup error:', e);
         errEl.style.display = 'block';
@@ -284,7 +293,7 @@ export const verifyPayment = async (req: Request, res: Response) => {
     const normalizedStatus = String(statusRaw || '').toLowerCase();
 
     if (
-      ['success', 'successful', 'paid', 'completed'].includes(normalizedStatus) &&
+      ['success', 'successful', 'paid', 'completed', '201'].includes(normalizedStatus) &&
       verifiedAmount >= Number(existingTx.amount) &&
       verifiedCurrency === String(existingTx.currency).toUpperCase()
     ) {
