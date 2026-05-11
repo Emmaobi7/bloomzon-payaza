@@ -10,6 +10,7 @@ const app = express();
 const PORT = process.env.PORT || 5001;
 
 app.use(cors());
+app.use(express.static('public'));
 
 // Capture raw body before JSON parsing — required for Payaza webhook HMAC (SHA512) validation
 app.use(

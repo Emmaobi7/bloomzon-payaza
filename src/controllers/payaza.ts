@@ -154,7 +154,7 @@ export const checkoutPage = (req: Request, res: Response) => {
   </div>
 
   <!-- Payaza Web SDK — loaded at end of body so it's ready before our script runs -->
-  <script src="https://checkout.payaza.africa/js/v1/bundle.js"></script>
+  <script src="https://checkout-v2.payaza.africa/js/v1/bundle.js"></script>
   <script>
     var statusEl = document.getElementById('status');
     var errEl = document.getElementById('err');
@@ -191,9 +191,10 @@ export const checkoutPage = (req: Request, res: Response) => {
         return null;
       }
       try {
+        var isTest = (${JSON.stringify(merchant_key)} || '').includes('TEST');
         return PayazaCheckout.setup({
           merchant_key: ${JSON.stringify(merchant_key)},
-          connection_mode: PayazaCheckout.LIVE_CONNECTION_MODE,
+          connection_mode: isTest ? PayazaCheckout.TEST_CONNECTION_MODE : PayazaCheckout.LIVE_CONNECTION_MODE,
           checkout_amount: Number(${JSON.stringify(amount)}),
           currency_code: ${JSON.stringify(currency || 'NGN')},
           email_address: ${JSON.stringify(email || '')},
