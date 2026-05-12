@@ -18,7 +18,11 @@ export const connectDB = async () => {
   try {
     await sequelize.authenticate();
     console.log('Connected to MySQL database via Sequelize');
-    await sequelize.sync({ alter: true });
+    // Use sync() without alter:true — payment_transactions is a shared table
+    // already created and indexed by bloomzon-flutterwave / Bloomzon-Server.
+    // alter:true would try to ADD UNIQUE indexes that already exist, hitting
+    // MySQL's 64-key limit and crashing on startup.
+    await sequelize.sync();
   } catch (error) {
     console.error('Unable to connect to the database:', error);
   }
